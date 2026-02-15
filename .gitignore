@@ -1,0 +1,47 @@
+# ======================
+# Java / Spring Boot
+# ======================
+*.class
+*.jar
+*.war
+*.log
+*.iml
+*.bat
+*.cmd
+
+# ======================
+# Maven
+# ======================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# ======================
+# IDE / Editor
+# ======================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+# VSCode
+.vscode/
+
+# ======================
+# OS / System
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Spring / sensitive
+# ======================
+# Do not commit local configuration or passwords
+application.properties
+
+# Docker
+docker-compose.yml
+Dockerfile
