@@ -42,6 +42,3 @@ Thumbs.db
 # Do not commit local configuration or passwords
 application.properties
 
-# Docker
-docker-compose.yml
-Dockerfile
