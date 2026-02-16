@@ -1,4 +1,4 @@
-package com.example.finax.dto;
+package com.example.finax.dto.todo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
