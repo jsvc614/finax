@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
                         Collectors.mapping(
                                 f -> {
                                     var msg = f.getDefaultMessage();
-                                    return msg != null ? msg : ""; // replace null with empty string
+                                    return msg != null ? msg : "";
                                 },
                                 Collectors.toList()
                         )
