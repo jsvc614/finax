@@ -20,7 +20,7 @@ public class Todo {
 
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title cannot exceed 255 characters")
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -29,15 +29,18 @@ public class Todo {
     @Column(nullable = false)
     private boolean completed = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "user_id")
+    private Long userId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // soft deletes
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @PrePersist
     void onCreate() {

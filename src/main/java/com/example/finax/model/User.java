@@ -34,6 +34,10 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // soft deletes
+    @Column(nullable = false)
+    private boolean deleted = false;
+
     @PrePersist
     void onCreate() {
         createdAt = LocalDateTime.now();
