@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ public class TodoController {
     @GetMapping
     public ResponseEntity<SuccessResponse<Map<String, Object>>> getAll(
             @RequestParam(required = false) String status,
+            @ParameterObject
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
@@ -40,6 +42,7 @@ public class TodoController {
     @GetMapping("/active")
     public ResponseEntity<SuccessResponse<Map<String, Object>>> getAllActive(
             @RequestParam(required = false) String status,
+            @ParameterObject
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
