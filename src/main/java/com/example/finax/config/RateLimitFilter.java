@@ -1,56 +1,71 @@
 package com.example.finax.config;
 
-import com.example.finax.model.User;
-import io.github.bucket4j.*;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
+@Component
 public class RateLimitFilter implements Filter {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    // Caffeine cache with a time-based eviction policy
+    private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
+            .expireAfterAccess(30, TimeUnit.MINUTES) // Evict buckets 30 minutes after last access
+            .build();
 
+    /**
+     * Creates a new rate limiting bucket using the Token Bucket algorithm.
+     * Current configuration: 100 requests per 30 minutes with interval refill.
+     *
+     * @return A new Bucket4j bucket configured with the rate limiting policy
+     */
     private Bucket createNewBucket() {
-//        Bandwidth limit = Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1)));
         Bandwidth limit = Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(30)));
         return Bucket.builder().addLimit(limit).build();
     }
 
+    /**
+     * Main rate limiting filter logic applied to each HTTP request.
+     * Rate limiting is applied based on the request's IP address before
+     * authentication.
+     *
+     * @param request  The incoming HTTP request
+     * @param response The HTTP response to modify if rate limit exceeded
+     * @param chain    Filter chain to continue processing if rate limit not
+     *                 exceeded
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
         HttpServletRequest req = (HttpServletRequest) request;
-        if (req.getDispatcherType() != DispatcherType.REQUEST) {
-            chain.doFilter(request, response);
-            return;
-        }
-
         HttpServletResponse res = (HttpServletResponse) response;
 
-        String key = "ANONYMOUS";
-        Object principal = SecurityContextHolder.getContext().getAuthentication() != null
-                ? SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-                : null;
+        // Use IP address as the rate-limiting key
+        String clientIp = req.getRemoteAddr();
 
-        if (principal instanceof User user) {
-            key = "USER_" + user.getId();
-        } else {
-            key = "IP_" + req.getRemoteAddr();
-        }
+        // Get or create a rate limiting bucket for this IP
+        Bucket bucket = buckets.get(clientIp, k -> createNewBucket());
 
-        Bucket bucket = buckets.computeIfAbsent(key, k -> createNewBucket());
-
+        // Try to consume 1 token from the bucket (non-blocking)
         if (bucket.tryConsume(1)) {
+            // Token available - allow request to proceed
             chain.doFilter(request, response);
         } else {
+            // Rate limit exceeded - return 429 Too Many Requests
             res.setStatus(429);
             res.setContentType("application/json");
             res.getWriter().write("{\"success\":false,\"message\":\"Too many requests, try again later\"}");

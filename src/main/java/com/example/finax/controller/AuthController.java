@@ -22,7 +22,7 @@ public class AuthController {
     public ResponseEntity<SuccessResponse<String>> register(@Valid @RequestBody RegisterRequest req) {
         // we can return token in case we want use to be logged in after registering
 //        String token = authService.register(req.getName(), req.getEmail(), req.getPassword());
-        MessageResponse messageResponse = authService.register(req.getName(), req.getEmail(), req.getPassword());
+        MessageResponse messageResponse = authService.register(req);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.of(messageResponse.getMessage(), "Register successful"));
     }
 

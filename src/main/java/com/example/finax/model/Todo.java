@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import lombok.Builder.Default;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,10 +29,12 @@ public class Todo {
     private String description;
 
     @Column(nullable = false)
+    @Default
     private boolean completed = false;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -40,6 +44,7 @@ public class Todo {
 
     // soft deletes
     @Column(nullable = false)
+    @Default
     private boolean deleted = false;
 
     @PrePersist

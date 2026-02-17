@@ -13,11 +13,27 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.List;
 
+/**
+ * JwtAuthenticationEntryPoint is responsible for handling unauthorized access
+ * attempts.
+ * It is triggered whenever an unauthenticated user tries to access a secured
+ * resource.
+ */
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Handles unauthorized access attempts by returning a 401 Unauthorized response
+     * with a structured JSON error message.
+     *
+     * @param request       The HTTP request
+     * @param response      The HTTP response
+     * @param authException The exception that triggered this entry point
+     * @throws IOException      If an input or output error occurs
+     * @throws ServletException If a servlet error occurs
+     */
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
@@ -29,8 +45,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         ErrorResponse errorResponse = ErrorResponse.of(
                 "Unauthorized",
-                Map.of("message", List.of("Authentication required"))
-        );
+                Map.of("message", List.of("Authentication required")));
 
         objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }
