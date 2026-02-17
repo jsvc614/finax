@@ -1,8 +1,10 @@
 package com.example.finax.controller;
 
 import com.example.finax.dto.SuccessResponse;
+import com.example.finax.dto.todo.TodoRequestDto;
+import com.example.finax.dto.todo.TodoDto;
 import com.example.finax.dto.todo.TodoStats;
-import com.example.finax.model.Todo;
+import com.example.finax.exception.BadRequestException;
 import com.example.finax.service.TodoService;
 import com.example.finax.util.CompletedFilterHelper;
 import com.example.finax.util.PageHelper;
@@ -31,40 +33,37 @@ public class TodoController {
     @GetMapping
     public ResponseEntity<SuccessResponse<Map<String, Object>>> getAll(
             @RequestParam(required = false) String status,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<Todo> todosPage = service.getAll(CompletedFilterHelper.getCompletedFilter(status), pageable);
+        Page<TodoDto> todosPage = service.getAll(CompletedFilterHelper.getCompletedFilter(status), pageable);
         return ResponseEntity.ok(SuccessResponse.of(PageHelper.toMap(todosPage), "Todos fetched successfully"));
     }
 
     @GetMapping("/active")
     public ResponseEntity<SuccessResponse<Map<String, Object>>> getAllActive(
             @RequestParam(required = false) String status,
-            @ParameterObject
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable) {
+            @ParameterObject @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<Todo> todosPage = service.getAllActive(CompletedFilterHelper.getCompletedFilter(status), pageable);
+        Page<TodoDto> todosPage = service.getAllActive(CompletedFilterHelper.getCompletedFilter(status), pageable);
         return ResponseEntity.ok(SuccessResponse.of(PageHelper.toMap(todosPage), "Todos fetched successfully"));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SuccessResponse<Todo>> getOne(@PathVariable Long id) {
+    public ResponseEntity<SuccessResponse<TodoDto>> getOne(@PathVariable Long id) {
         return ResponseEntity.ok(SuccessResponse.of(service.getById(id), "Todo fetched successfully"));
     }
 
     @PostMapping
-    public ResponseEntity<SuccessResponse<Todo>> create(@Valid @RequestBody Todo todo) {
-        Todo created = service.create(todo);
+    public ResponseEntity<SuccessResponse<TodoDto>> create(@Valid @RequestBody TodoRequestDto createTodoDto) {
+        TodoDto created = service.create(createTodoDto);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(SuccessResponse.of(created, "Todo created successfully"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SuccessResponse<Todo>> update(@PathVariable Long id, @Valid @RequestBody Todo todo) {
-        return ResponseEntity.ok(SuccessResponse.of(service.update(id, todo), "Todo updated successfully"));
+    public ResponseEntity<SuccessResponse<TodoDto>> update(@PathVariable Long id,
+            @Valid @RequestBody TodoRequestDto updateTodoDto) {
+        return ResponseEntity.ok(SuccessResponse.of(service.update(id, updateTodoDto), "Todo updated successfully"));
     }
 
     @DeleteMapping("/{id}")
@@ -80,7 +79,7 @@ public class TodoController {
     }
 
     @PatchMapping("/{id}/toggle")
-    public ResponseEntity<SuccessResponse<Todo>> toggle(@PathVariable Long id) {
+    public ResponseEntity<SuccessResponse<TodoDto>> toggle(@PathVariable Long id) {
         return ResponseEntity.ok(SuccessResponse.of(service.toggle(id), "Todo toggled successfully"));
     }
 
@@ -90,7 +89,17 @@ public class TodoController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<SuccessResponse<List<Todo>>> searchTodos(@NotBlank @RequestParam String keyword){
-        return ResponseEntity.ok(SuccessResponse.of(service.searchTodos(keyword), "Todos search results fetched successfully"));
+    public ResponseEntity<SuccessResponse<List<TodoDto>>> searchTodos(
+            @RequestParam @NotBlank(message = "Search keyword must not be blank") String keyword) {
+
+        // Sanitize the keyword to prevent SQL injection risks
+        String sanitizedKeyword = keyword.trim();
+
+        if (sanitizedKeyword.isEmpty()) {
+            throw new BadRequestException("Search keyword must not be empty");
+        }
+
+        List<TodoDto> todos = service.searchTodos(sanitizedKeyword);
+        return ResponseEntity.ok(SuccessResponse.of(todos, "Search results fetched successfully"));
     }
 }

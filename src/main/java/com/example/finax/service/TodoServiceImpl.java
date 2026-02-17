@@ -1,11 +1,14 @@
 package com.example.finax.service;
 
-import com.example.finax.model.Todo;
+import com.example.finax.dto.todo.TodoRequestDto;
+import com.example.finax.dto.todo.TodoDto;
 import com.example.finax.dto.todo.TodoStats;
+import com.example.finax.exception.ResourceNotFoundException;
+import com.example.finax.mapper.TodoMapper;
+import com.example.finax.model.Todo;
 import com.example.finax.model.User;
 import com.example.finax.repository.TodoRepository;
-import com.example.finax.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,99 +16,114 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class TodoServiceImpl implements TodoService {
 
-    private final TodoRepository repository;
+    @Autowired
+    private TodoRepository todoRepository;
+
+    @Autowired
+    private TodoMapper todoMapper;
 
     @Override
-    public Page<Todo> getAll(Boolean completed, Pageable pageable) {
+    public Page<TodoDto> getAll(Boolean completed, Pageable pageable) {
         User currentUser = getCurrentUser();
-        if (completed == null) {
-            return repository.findByUserId(currentUser.getId(), pageable);
-        } else {
-            return repository.findByUserIdAndCompleted(currentUser.getId(), completed, pageable);
-        }
-    }
-
-    // get all service method with soft deletes
-    @Override
-    public Page<Todo> getAllActive(Boolean completed, Pageable pageable) {
-        User currentUser = getCurrentUser();
-        if (completed == null) {
-            return repository.findAllByUserIdAndDeletedFalse(currentUser.getId(), pageable);
-        } else {
-            return repository.findByUserIdAndCompletedAndDeletedFalse(currentUser.getId(), completed, pageable);
-        }
+        Page<Todo> todos = (completed == null)
+                ? todoRepository.findByUserId(currentUser.getId(), pageable)
+                : todoRepository.findByUserIdAndCompleted(currentUser.getId(), completed, pageable);
+        return todos.map(todoMapper::mapToDto);
     }
 
     @Override
-    public Todo getById(Long id) {
+    public Page<TodoDto> getAllActive(Boolean completed, Pageable pageable) {
         User currentUser = getCurrentUser();
-        return repository.findByUserIdAndId(currentUser.getId(), id)
+        Page<Todo> todos = (completed == null)
+                ? todoRepository.findAllByUserIdAndDeletedFalse(currentUser.getId(), pageable)
+                : todoRepository.findByUserIdAndCompletedAndDeletedFalse(currentUser.getId(), completed, pageable);
+        return todos.map(todoMapper::mapToDto);
+    }
+
+    @Override
+    public TodoDto getById(Long id) {
+        User currentUser = getCurrentUser();
+        Todo todo = todoRepository.findByUserIdAndId(currentUser.getId(), id)
                 .orElseThrow(() -> new ResourceNotFoundException("Todo not found"));
+        return todoMapper.mapToDto(todo);
     }
 
     @Override
-    public Todo create(Todo todo) {
+    public TodoDto create(TodoRequestDto createTodoDto) {
         User currentUser = getCurrentUser();
-        todo.setUserId(currentUser.getId());
-        return repository.save(todo);
+        Todo todo = todoMapper.mapToEntity(createTodoDto);
+        todo.setUser(currentUser);
+        Todo savedTodo = todoRepository.save(todo);
+        return todoMapper.mapToDto(savedTodo);
     }
 
     @Override
-    public Todo update(Long id, Todo updated) {
-        Todo existing = getById(id);
-        existing.setTitle(updated.getTitle());
-        existing.setDescription(updated.getDescription());
-        existing.setCompleted(updated.isCompleted());
-        return repository.save(existing);
+    public TodoDto update(Long id, TodoRequestDto updateTodoDto) {
+        Todo existingTodo = getByIdEntity(id);
+
+        if (updateTodoDto.getTitle() != null) {
+            existingTodo.setTitle(updateTodoDto.getTitle());
+        }
+        if (updateTodoDto.getDescription() != null) {
+            existingTodo.setDescription(updateTodoDto.getDescription());
+        }
+        existingTodo.setCompleted(updateTodoDto.isCompleted());
+
+        Todo updatedTodo = todoRepository.save(existingTodo);
+
+        return todoMapper.mapToDto(updatedTodo);
     }
 
     @Override
     public void delete(Long id) {
-        Todo existing = getById(id);
-        repository.delete(existing);
+        Todo existingTodo = getByIdEntity(id);
+        todoRepository.delete(existingTodo);
     }
 
     @Override
     public void softDelete(Long id) {
-        Todo existing = getById(id);
-        existing.setDeleted(true);
-        repository.save(existing);
+        Todo existingTodo = getByIdEntity(id);
+        existingTodo.setDeleted(true);
+        todoRepository.save(existingTodo);
     }
 
     @Override
-    public Todo toggle(Long id) {
-        Todo existing = getById(id);
-        existing.setCompleted(!existing.isCompleted());
-        return repository.save(existing);
+    public TodoDto toggle(Long id) {
+        Todo existingTodo = getByIdEntity(id);
+        existingTodo.setCompleted(!existingTodo.isCompleted());
+        Todo toggledTodo = todoRepository.save(existingTodo);
+        return todoMapper.mapToDto(toggledTodo);
     }
 
     @Override
     public TodoStats stats() {
         User currentUser = getCurrentUser();
-
-        long total = repository.countByUserId(currentUser.getId());
-        long completed = repository.countByUserIdAndCompleted(currentUser.getId(), true);
+        long total = todoRepository.countByUserId(currentUser.getId());
+        long completed = todoRepository.countByUserIdAndCompleted(currentUser.getId(), true);
         long pending = total - completed;
-
         return new TodoStats(total, completed, pending);
     }
 
     @Override
-    public List<Todo> searchTodos(String keyword) {
+    public List<TodoDto> searchTodos(String keyword) {
         User currentUser = getCurrentUser();
-        return repository.searchTodos(currentUser.getId(), keyword);
+        List<Todo> todos = todoRepository.searchTodos(currentUser.getId(), keyword);
+        return todos.stream().map(todoMapper::mapToDto).collect(Collectors.toList());
+    }
+
+    private Todo getByIdEntity(Long id) {
+        User currentUser = getCurrentUser();
+        return todoRepository.findByUserIdAndId(currentUser.getId(), id)
+                .orElseThrow(() -> new ResourceNotFoundException("Todo not found"));
     }
 
     private User getCurrentUser() {
-        return (User) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }

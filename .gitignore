@@ -4,10 +4,13 @@
 *.class
 *.jar
 *.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
 *.log
 *.iml
-*.bat
-*.cmd
 
 # ======================
 # Maven
@@ -17,7 +20,13 @@ pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 pom.xml.next
+pom.xml.backup
 release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
 
 # ======================
 # IDE / Editor
@@ -25,23 +34,45 @@ release.properties
 # IntelliJ IDEA
 .idea/
 *.iws
-*.iml
 *.ipr
-# VSCode
-.vscode/
+out/
 
 # ======================
 # OS / System
 # ======================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+.env.local
+*.pid
 
 # ======================
-# Spring / sensitive
+# Spring Boot Configuration
 # ======================
-# Do not commit local configuration or passwords
 application.properties
+.env
 
-# Docker
-docker-compose.yml
-Dockerfile
+# ======================
+# Sensitive Data
+# ======================
+*.key
+*.pem
+*.pfx
+*.p12
+secrets/
+credentials/
+
+
+# ======================
+# Misc
+# ======================
+*.bak
+*.tmp
+.cache/
+.m2/
+*.orig
+.rej
