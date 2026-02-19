@@ -2,7 +2,7 @@
 
 ## 📋 Brief Description
 
-Finax is a robust backend financial application built with Spring Boot 4.0.2. It provides a secure REST API for todo/task management with JWT-based authentication, rate limiting, and database migrations using Flyway.
+Finax is a backend application built with Spring Boot 4.0.0. It provides a secure REST API for todo/task management with JWT-based authentication, rate limiting, and database migrations using Flyway.
 
 The application demonstrates enterprise-grade practices including:
 - Secure JWT token-based authentication
@@ -348,7 +348,7 @@ Content-Type: application/json
 {
   "title": "Buy groceries",
   "description": "Milk, eggs, bread",
-  "dueDate": "2026-02-20T10:00:00"
+  "completed": false
 }
 ```
 
@@ -360,7 +360,7 @@ Content-Type: application/json
 {
   "title": "Buy groceries",
   "description": "Updated description",
-  "dueDate": "2026-02-21T10:00:00"
+  "completed": false
 }
 ```
 
@@ -415,7 +415,6 @@ All API responses follow a standard format:
     "title": "Buy groceries",
     "description": "Milk, eggs, bread",
     "completed": false,
-    "dueDate": "2026-02-20T10:00:00",
     "createdAt": "2026-02-17T14:30:00",
     "updatedAt": "2026-02-17T14:30:00"
   },
